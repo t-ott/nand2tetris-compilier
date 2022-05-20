@@ -127,7 +127,7 @@ class JackTokenizer:
                 if char in SYMBOLS:
                     tokens.append(char)
                 elif char == '"':
-                    # start of stirng_const
+                    # start of string_const
                     in_string_const = True
                     current_string_const += char
                 elif char == ' ':
@@ -163,26 +163,13 @@ class JackTokenizer:
         return self.current_token_index < len(self.tokens) - 1
 
 
-    def advance(self):
+    def advance(self) -> tuple([str, str]):
         self.current_token_index += 1
         self.current_token = self.tokens[self.current_token_index]
-        return self.current_token, self.token_type(self.current_token)
+        token_type = self.token_type(self.current_token)
+        token = self.string_val() if token_type == 'stringConstant' else self.current_token
 
-
-    def keyword(self):
-        pass
-
-
-    def symbol(self) -> str:
-        pass
-
-
-    def identifier(self) -> str:
-        pass
-
-
-    def int_val(self) -> int:
-        pass
+        return token, token_type
 
 
     def string_val(self) -> str:

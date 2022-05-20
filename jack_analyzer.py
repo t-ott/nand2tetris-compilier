@@ -37,16 +37,7 @@ class JackAnalyzer:
             # Writing the *T.xml file
             while tokenizer.has_more_tokens():
                 token, token_type = tokenizer.advance()
-
-                if token_type == 'keyword':
-                    pass
-                elif token_type == 'symbol':
-                    pass
-                elif token_type == 'identifier':
-                    pass
-                elif token_type == 'integerConstant':
-                    pass
-                elif token_type == 'stringConstant':
+                if token_type == 'stringConstant':
                     token = tokenizer.string_val()
 
                 tokenizer.write_token_tag(token_type, token)

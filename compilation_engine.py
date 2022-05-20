@@ -42,29 +42,10 @@ class CompilationEngine:
         token, token_type = self.tokenizer.advance()
         token, token_type = self.compile_class_var_dec(class_tag, token, token_type)
 
-        # print(f'Done with compile_class_var_dec. Current token: {token}')
-
-        # TODO: remove the i iterator thing
-
-        # i = 0
         while token != '}':
-
-            # if i == 5:
-            #     break
-
-            # # print(f'TOKEN: {token}')
-
             token, token_type = self.compile_subroutine(class_tag, token, token_type)
-            # assert token == '}', \
-            #     'Error in class definition, expecting symbol "}" ' \
-            #     f'but got token "{token}" with type: {token_type}'
-            # self._create_tag(class_tag, token, token_type)
-
-            # i += 1
         
         self._create_tag(class_tag, token_type, token)
-
-        # # print(self.parser_root.toprettyxml())
 
 
     def compile_class_var_dec(self, class_tag, token, token_type):
@@ -494,7 +475,6 @@ class CompilationEngine:
         return token, token_type
 
     def compile_expression(self, parent_tag, token, token_type):
-        # print(f'\nStarting compile_expression, token: "{token}" token_type" {token_type}')
 
         token, token_type = self.compile_term(parent_tag, token, token_type)
 
@@ -507,7 +487,6 @@ class CompilationEngine:
 
 
     def compile_term(self, parent_tag, token, token_type):
-        # print(f'\nSTARTING TERM. token: {token}, token_type: {token_type}')
 
         if token_type == 'symbol':
             if token == ';':
@@ -608,8 +587,7 @@ class CompilationEngine:
                 print(f'NEED TO HANDLE THIS TERM SITUATION. TOKEN: {token} TOKEN_TYPE: {token_type}')
 
         elif token_type == 'stringConstant':
-            string_val = self.tokenizer.string_val()
-            self._create_tag(term_tag, token_type, string_val)
+            self._create_tag(term_tag, token_type, token)
             token, token_type = self.tokenizer.advance()
 
         elif token_type == 'integerConstant':
@@ -627,15 +605,7 @@ class CompilationEngine:
 
 
     def compile_expression_list(self, parent_tag, token, token_type):
-        # while token != ')':
-        #     # print(f'In compile_expression_list(): token={token} token_type={token_type}')
-
-        #     expression_tag = self._create_tag(parent_tag, 'expression', None)
-        #     token, token_type = self.compile_expression(expression_tag, token, token_type)
-        #     token, token_type = self.tokenizer.advance()
-
         while True:
-            # print(f'In compile_expression_list(): token={token} token_type={token_type}')
             if token == ')':
                 break
 
@@ -646,10 +616,6 @@ class CompilationEngine:
                 # Additional expression
                 self._create_tag(parent_tag, token_type, token)
                 token, token_type = self.tokenizer.advance()
-
-            # # print(f'token: {token}')
-
-            # compile expression
         
         return token, token_type
 
