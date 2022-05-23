@@ -27,22 +27,20 @@ class CompilationEngine:
         
         self._create_tag(class_tag, token_type, token)
 
+        # className
         token, token_type = self.tokenizer.advance()
-        assert token_type == 'identifier', \
-            f'Invalid class identifier "{token}" with ' \
-            'type: {token_type}"'
         self._create_tag(class_tag, token_type, token)
 
+        # '{'
         token, token_type = self.tokenizer.advance()
-        assert token_type == 'symbol', \
-            'Error in class definition, expecting symbol ' \
-            f'but got token "{token}" with type: {token_type}'
         self._create_tag(class_tag, token_type, token)
 
+        # classVarDec
         token, token_type = self.tokenizer.advance()
         token, token_type = self.compile_class_var_dec(class_tag, token, token_type)
 
         while token != '}':
+            # zero or more subroutineDec
             token, token_type = self.compile_subroutine(class_tag, token, token_type)
         
         self._create_tag(class_tag, token_type, token)
@@ -58,38 +56,23 @@ class CompilationEngine:
 
             # type
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'keyword' or token_type == 'identifier', \
-                'Error in classVarDec, expecting keyword or identifier but ' \
-                f'got token "{token}" with type: {token_type}.'
             self._create_tag(class_var_dec_tag, token_type, token)
 
-            # one or more varNames
+            # one or more varName
             while token != ';': 
                 # varName
                 token, token_type = self.tokenizer.advance()
-                assert token_type == 'identifier', \
-                    'Error in classVarDec, expecting identifier but ' \
-                    f'got token "{token}" with type: {token_type}.'
                 self._create_tag(class_var_dec_tag, token_type, token)
 
-                # "," or ";" 
+                # ',' or ';' 
                 token, token_type = self.tokenizer.advance()
-                assert token_type == 'symbol', \
-                    'Error in classVarDec, expecting symbol but ' \
-                    f'got token "{token}" with type: {token_type}.'
                 self._create_tag(class_var_dec_tag, token_type, token)
-            
-            # self._create_tag(class_var_dec_tag, token_type, token)
 
             token, token_type = self.tokenizer.advance()
             return self.compile_class_var_dec(class_tag, token, token_type)
 
 
     def compile_subroutine(self, parent_tag, token, token_type):
-        # if self.tokenizer.current_token not in ['constructor', 'function', 'method']:
-        #     # No more subroutines
-        #     return token, token_type
-        
         if token not in ['constructor', 'function', 'method']:
             # No more subroutines
             return token, token_type
@@ -101,67 +84,44 @@ class CompilationEngine:
         if token == 'function' or token == 'method':
             # type
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'keyword', \
-                'Error in subroutine definition, expecting ' \
-                f'keyword but got token "{token}" with type: ' \
-                f'{token_type}.'
             self._create_tag(subroutine_tag, token_type, token)
         elif token == 'constructor':
+            # className
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'identifier', \
-                'Error in subroutine definition, expecting ' \
-                f'identifier but got token "{token}" with type: ' \
-                f'{token_type}.'
             self._create_tag(subroutine_tag, token_type, token)           
 
+        # subroutineName
         token, token_type = self.tokenizer.advance()
-        assert token_type == 'identifier', \
-            'Error in subroutine definition, expecting ' \
-            f'identifier but got token "{token}" with type: ' \
-            f'{token_type}.'
-        self._create_tag(subroutine_tag, token_type, token)
-        
-
-        token, token_type = self.tokenizer.advance()
-        assert token_type == 'symbol', \
-             'Error in subroutine definition, expecting ' \
-            f'symbol but got token "{token}" with type: ' \
-            f'{token_type}.'
         self._create_tag(subroutine_tag, token_type, token)
 
-        # add empty text to tag to force minidom to create closing tag
+        # '('
+        token, token_type = self.tokenizer.advance()
+        self._create_tag(subroutine_tag, token_type, token)
+
+        # Add empty text to tag to force minidom to create closing tag
         parameter_list_tag = self._create_tag(subroutine_tag, 'parameterList', '')
 
+        # zero or more parameters
         token, token_type = self.tokenizer.advance()
         token, token_type = self.compile_parameter_list(parameter_list_tag, token, token_type)
 
-        assert token_type == 'symbol', \
-            'Error in subroutine definition following ' \
-            'parameterList, expecting symbol but got ' \
-            f'token "{token}" with type: {token_type}.'
+        # ')'
         self._create_tag(subroutine_tag, token_type, token)
 
-        # start of subroutineBody
+        # '{' (start of subroutineBody)
         token, token_type = self.tokenizer.advance()
-        assert token_type == 'symbol', \
-            'Error in subroutine definition following ' \
-            'parameterList, expecting symbol but got ' \
-            f'token "{token}" with type: {token_type}.'
-
         subroutine_body_tag = self._create_tag(subroutine_tag, 'subroutineBody', None)
         self._create_tag(subroutine_body_tag, token_type, token)
 
-        # start of varDec(s)
+        # zero or more varDec
         token, token_type = self.tokenizer.advance()
         token, token_type = self.compile_var_dec(subroutine_body_tag, token, token_type)
 
-        # start of statement(s)
+        # statement
         statements_tag = self._create_tag(subroutine_body_tag, 'statements', None)
         token, token_type = self.compile_statements(statements_tag, token, token_type)
 
-        assert token == '}', \
-            'Error at end of subRoutine, expecting token "}" but got ' \
-            f'token "{token}" with type {token_type}'
+        # '}' (end of subroutineBody)
         self._create_tag(subroutine_body_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
@@ -174,15 +134,11 @@ class CompilationEngine:
             return token, token_type
         
         while token != ')':
-            assert token_type == 'keyword', \
-                'Error in parameterList, expecting token type "keyword" but ' \
-                f'got token {token} with type {token_type}'
+            # type
             self._create_tag(parent_tag, token_type, token)
         
-            token, token_type = self.tokenizer.advance()
-            assert token_type == 'identifier', \
-                'Error at end of parameterList, expecting token type "identifier" but ' \
-                f'got token "{token}" with type {token_type}'     
+            # varName
+            token, token_type = self.tokenizer.advance()   
             self._create_tag(parent_tag, token_type, token)   
             
             token, token_type = self.tokenizer.advance()
@@ -196,7 +152,7 @@ class CompilationEngine:
 
     def compile_var_dec(self, parent_tag, token, token_type):
         if token != 'var':
-            # end of var decs
+            # end of varDecs
             return token, token_type
 
         var_dec_tag = self._create_tag(parent_tag, 'varDec', None)
@@ -204,25 +160,16 @@ class CompilationEngine:
 
         # type
         token, token_type = self.tokenizer.advance()
-        assert token_type == 'identifier' or token_type == 'keyword', \
-            'Error in varDec, expecting identifier but ' \
-            f'got token "{token}" with type: {token_type}.'
         self._create_tag(var_dec_tag, token_type, token)
 
         # one or more varNames
         while token != ';': 
             # varName
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'identifier', \
-                'Error in varDec, expecting identifier but ' \
-                f'got token "{token}" with type: {token_type}.'
             self._create_tag(var_dec_tag, token_type, token)
 
             # "," or ";" 
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'symbol', \
-                'Error in varDec, expecting symbol but ' \
-                f'got token "{token}" with type: {token_type}.'
             self._create_tag(var_dec_tag, token_type, token)
 
         # end of varDecs, or another varDec
@@ -231,12 +178,7 @@ class CompilationEngine:
 
 
     def compile_statements(self, parent_tag, token, token_type):
-
-        # print(f'\nWorking on statement starting with token: {token}')
-
-        # if token == '}' or token == ';' or token == ')':
         if token == '}':
-            # TODO: Check that this is actually correct...
             # end of statements
             return token, token_type
 
@@ -260,54 +202,41 @@ class CompilationEngine:
 
 
     def compile_do(self, parent_tag, token, token_type):
-        assert token == 'do', \
-            'Error in do statement, expecting token "do" but '\
-            f'got token "{token}" with type: {token_type}'          
+        # do    
         self._create_tag(parent_tag, token_type, token)
 
-        token, token_type = self.tokenizer.advance()
-        assert token_type == 'identifier', \
-            'Error in do statement, expecting identifier but '\
-            f'got token "{token}" with type: {token_type}'    
+        # subroutineName or className (start of subroutineCall)
+        token, token_type = self.tokenizer.advance() 
         self._create_tag(parent_tag, token_type, token)
 
+        # '(' or '.'
         token, token_type = self.tokenizer.advance()
-        assert token == '(' or token == '.', \
-            'Error in do statement, expecting "(" or "." but ' \
-            f'got token "{token}" with type: {token_type}'
         self._create_tag(parent_tag, token_type, token)
 
         if token == '(':
+            # start expressionList
             token, token_type = self.tokenizer.advance()
             expression_list_tag = self._create_tag(parent_tag, 'expressionList', '')
             self.compile_expression_list(expression_list_tag, token, token_type)
         elif token == '.':
+            # subroutineName
             token, token_type = self.tokenizer.advance()
-            assert token_type == 'identifier', \
-                'Error in do statement, expecting identifier but '\
-                f'got token "{token}" with type: {token_type}'
             self._create_tag(parent_tag, token_type, token)
 
-            token, token_type = self.tokenizer.advance()
-            assert token == '(', \
-                'Error in do statement, expecting "(" but ' \
-                f'got token "{token}" with type: {token_type}'              
+            # '('
+            token, token_type = self.tokenizer.advance()            
             self._create_tag(parent_tag, token_type, token)
 
+            # start of expressionList
             token, token_type = self.tokenizer.advance()
             expression_list_tag = self._create_tag(parent_tag, 'expressionList', '')
             token, token_type = self.compile_expression_list(expression_list_tag, token, token_type)
 
-        # end of expressionList
-        assert token == ')', \
-            'Error in do statement, expecting ")" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # ')' (end of expressionList)
         self._create_tag(parent_tag, token_type, token)
 
-        token, token_type = self.tokenizer.advance()
-        assert token == ';', \
-            'Error in do statement, expecting ";" but ' \
-            f'got token "{token}" with type: {token_type}'              
+        # ';' (end of doStatement)
+        token, token_type = self.tokenizer.advance()           
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
@@ -315,9 +244,7 @@ class CompilationEngine:
 
 
     def compile_let(self, parent_tag, token, token_type):
-        assert token == 'let', \
-            'Error in let statement, expecting token "let" but '\
-            f'got token "{token}" with type: {token_type}'
+        # let
         self._create_tag(parent_tag, token_type, token)
 
         # varName
@@ -331,15 +258,12 @@ class CompilationEngine:
             expression_tag = self._create_tag(parent_tag, 'expression', None)
             token, token_type = self.tokenizer.advance()
             token, token_type = self.compile_expression(expression_tag, token, token_type)
-            assert token == ']', \
-                'Error in let statement, expecting token "]" but ' \
-                f'got token "{token} with type: {token_type}'
+
+            # ']' (end of array index)
             self._create_tag(parent_tag, token_type, token)
             token, token_type = self.tokenizer.advance()
         
-        assert token == '=', \
-            'Error in let statement, expecting token "=" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # '='
         self._create_tag(parent_tag, token_type, token)
 
         # expression
@@ -347,9 +271,7 @@ class CompilationEngine:
         token, token_type = self.tokenizer.advance()
         token, token_type = self.compile_expression(expression_tag, token, token_type)
 
-        assert token == ';', \
-            'Error in let statement, expecting token ";" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # ';' (end of letStatement)
         self._create_tag(parent_tag, token_type, token)
         token, token_type = self.tokenizer.advance()
 
@@ -357,59 +279,48 @@ class CompilationEngine:
 
 
     def compile_while(self, parent_tag, token, token_type):
-        assert token == 'while', \
-            'Error in while statement, expecting token "while" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # while
         self._create_tag(parent_tag, token_type, token)
         
+        # '('
         token, token_type = self.tokenizer.advance()
-        assert token == '(', \
-            'Error in while statement, expecting token "(" but ' \
-            f'got token "{token}" with type: {token_type}'
         self._create_tag(parent_tag, token_type, token)
         
+        # expression
         token, token_type = self.tokenizer.advance()
         expression_tag = self._create_tag(parent_tag, 'expression', None)
         token, token_type = self.compile_expression(expression_tag, token, token_type)
-        assert token == ')', \
-            'Error in while statement, expecting token ")" but ' \
-            f'got token "{token}" with type: {token_type}'
+
+        # ')' (end of expression)
         self._create_tag(parent_tag, token_type, token)
 
+        # '{'
         token, token_type = self.tokenizer.advance()
-        assert token == '{', \
-            'Error in while statement, expecting token "{" but ' \
-            f'got token "{token}" with type: {token_type}'
         self._create_tag(parent_tag, token_type, token)
 
+        # statements
         token, token_type = self.tokenizer.advance()
         statements_tag = self._create_tag(parent_tag, 'statements', None)
         token, token_type = self.compile_statements(statements_tag, token, token_type)
 
-        # token, token_type = self.tokenizer.advance()
-        assert token == '}', \
-            'Error in while statement, expecting token "}" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # '}' (end of statements)
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
-
         return token, token_type
 
 
     def compile_return(self, parent_tag, token, token_type):
-        assert token == 'return', \
-            'Error in return statement, expecting token "return" but ' \
-            f'got token "{token}" with type: {token_type}' 
+        # return
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
         if token != ';':
+            # expression
             expression_tag = self._create_tag(parent_tag, 'expression', None)
             token, token_type = self.compile_expression(expression_tag, token, token_type)
-        assert token == ';', \
-            'Error in return statement, expecting token ";" but ' \
-            f'got token "{token}" with type: {token_type}'             
+
+        # ';' (end of returnStatement)          
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
@@ -417,67 +328,60 @@ class CompilationEngine:
 
 
     def compile_if(self, parent_tag, token, token_type):
-        assert token == 'if', \
-            'Error in if statement, expecting token "if" but ' \
-            f'got token "{token}" with type: {token_type}'
+        # if
         self._create_tag(parent_tag, token_type, token)
 
+        # '('
         token, token_type = self.tokenizer.advance()
-        assert token == '(', \
-            'Error in if statement, expecting token "(" but ' \
-            f'got token "{token}" with type: {token_type}'
         self._create_tag(parent_tag, token_type, token)
 
+        # expression
         token, token_type = self.tokenizer.advance()
         expression_tag = self._create_tag(parent_tag, 'expression', None)
         token, token_type = self.compile_expression(expression_tag, token, token_type)
-        assert token == ')', \
-            'Error in if statement, expecting token ")" but ' \
-            f'got token "{token}" with type: {token_type}'
+
+        # ')' (end of expression)
         self._create_tag(parent_tag, token_type, token)
 
+        # '{'
         token, token_type = self.tokenizer.advance()
-        assert token == '{' , \
-            'Error in if statement, expecting token "{" but ' \
-            f'got token "{token}" with type: {token_type}'
         self._create_tag(parent_tag, token_type, token)
 
+        # statements
         token, token_type = self.tokenizer.advance()
         statements_tag = self._create_tag(parent_tag, 'statements', None)
         token, token_type = self.compile_statements(statements_tag, token, token_type)
-        assert token == '}', \
-            'Error in if statement, expecting token "}" but ' \
-            f'got token "{token}" with type: {token_type}'
+
+        # '}' (end of statements)
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
         if token == 'else':
-            # print('In else branch...')
-
+            # else branch of ifStatement
             self._create_tag(parent_tag, token_type, token)
             
+            # '{'
             token, token_type = self.tokenizer.advance()
-            assert token == '{', \
-                'Error in else branch of if statement, expecting token "{" but ' \
-                f'got token "{token}" with type: {token_type}'
             self._create_tag(parent_tag, token_type, token)
 
+            # statements
             token, token_type = self.tokenizer.advance()
             statements_tag = self._create_tag(parent_tag, 'statements', None)
             token, token_type = self.compile_statements(statements_tag, token, token_type)
-            assert token == '}', \
-                'Error in else branch of if statement, expecting token "}" but ' \
-                f'got token "{token}" with type: {token_type}'
+
+            # '}' (end of statements)
             self._create_tag(parent_tag, token_type, token)
 
             token, token_type = self.tokenizer.advance()
 
         return token, token_type
 
-    def compile_expression(self, parent_tag, token, token_type):
 
+    def compile_expression(self, parent_tag, token, token_type):
+        # term
         token, token_type = self.compile_term(parent_tag, token, token_type)
 
+        # zero or more (op term) groupings
         while token in OP_SYMBOLS:
             self._create_tag(parent_tag, token_type, token)
             token, token_type = self.tokenizer.advance()
@@ -487,14 +391,11 @@ class CompilationEngine:
 
 
     def compile_term(self, parent_tag, token, token_type):
-
         if token_type == 'symbol':
-            if token == ';':
-                # print('Done with term because of symbol ";"')
+            if token == ';' or token == ')':
+                # end of term
                 return token, token_type
-            elif token == ')':
-                # print('Done with term because of symbol ")"')
-                return token, token_type
+
             elif token == '(':
                 term_tag = self._create_tag(parent_tag, 'term', None)
                 self._create_tag(term_tag, token_type, token)
@@ -502,13 +403,9 @@ class CompilationEngine:
 
                 expression_tag = self._create_tag(term_tag, 'expression', None)
                 token, token_type = self.compile_expression(expression_tag, token, token_type)
-                assert token == ')', \
-                    'Error in term parsing, expecting token ")" with ' \
-                    f'type "symbol" but got token "{token}" with type: ' \
-                    f'{token_type}'
 
+                # ')' (end of expression)
                 self._create_tag(term_tag, token_type, token)
-
                 token, token_type = self.tokenizer.advance()
 
                 return token, token_type
@@ -522,7 +419,8 @@ class CompilationEngine:
                 return token, token_type
 
             else:
-                print(f'In compile_term(), need to handle symbol {token}')
+                raise ValueError(f'Need to handle symbol: {token}')
+
         else:
             term_tag = self._create_tag(parent_tag, 'term', None)
 
@@ -536,26 +434,19 @@ class CompilationEngine:
                 self._create_tag(term_tag, initial_token_type, initial_token)
                 self._create_tag(term_tag, token_type, token)
 
+                # subroutine name
                 token, token_type = self.tokenizer.advance()
-                assert token_type == 'identifier', \
-                    'Error in term parsing, expecting subroutineName with ' \
-                    f'type "identifier" but got token "{token}" with type: ' \
-                    f'{token_type}'
                 self._create_tag(term_tag, token_type, token)
 
+                # '('
                 token, token_type = self.tokenizer.advance()
-                assert token == '(', \
-                    'Error in term parsing, expecting token "(" but got ' \
-                    f'token "{token}" with type: {token_type}'
                 self._create_tag(term_tag, token_type, token)
 
                 expression_list_tag = self._create_tag(term_tag, 'expressionList', '')
                 token, token_type = self.tokenizer.advance()
                 token, token_type = self.compile_expression_list(expression_list_tag, token, token_type)
 
-                assert token == ')', \
-                    'Error in term parsing, expecting token ")" but got ' \
-                    f'token "{token}" with tpe: {token_type}'
+                # ')' (end of expression list)
                 self._create_tag(term_tag, token_type, token)
                 token, token_type = self.tokenizer.advance()
                 
@@ -567,9 +458,8 @@ class CompilationEngine:
                 expression_tag = self._create_tag(term_tag, 'expression', None)
                 token, token_type = self.tokenizer.advance()
                 token, token_type = self.compile_expression(expression_tag, token, token_type)
-                assert token == ']', \
-                    'Error in term parsing, expecting token "]" but got ' \
-                    f'token "{token}" with tpe: {token_type}'
+                
+                # end of array indexing
                 self._create_tag(term_tag, token_type, token)
                 token, token_type = self.tokenizer.advance()
 
@@ -577,14 +467,13 @@ class CompilationEngine:
                 # identifier only
                 self._create_tag(term_tag, initial_token_type, initial_token)
                 return token, token_type
-                # self._create_tag(term_tag, token_type, token)
 
             elif token in OP_SYMBOLS:
                 self._create_tag(term_tag, initial_token_type, initial_token)
                 return token, token_type
 
             else:
-                print(f'NEED TO HANDLE THIS TERM SITUATION. TOKEN: {token} TOKEN_TYPE: {token_type}')
+                raise ValueError(f'Need to handle term with tokens: {initial_token} {token}')
 
         elif token_type == 'stringConstant':
             self._create_tag(term_tag, token_type, token)
@@ -599,7 +488,10 @@ class CompilationEngine:
             token, token_type = self.tokenizer.advance()
 
         else:
-            print(f'NEED TO HANDLE THIS TERM. TOKEN: "{token}" WITH TOKEN_TYPE: {token_type}')
+            raise ValueError(
+                'Unexpected token within term. '
+                f'Token: {token} with token type: {token_type}'
+            )
 
         return token, token_type
 
@@ -607,22 +499,23 @@ class CompilationEngine:
     def compile_expression_list(self, parent_tag, token, token_type):
         while True:
             if token == ')':
+                # end of expressionList
                 break
 
             expression_tag = self._create_tag(parent_tag, 'expression', None)
             token, token_type = self.compile_expression(expression_tag, token, token_type)
             
             if token == ',':
-                # Additional expression
+                # additional expression
                 self._create_tag(parent_tag, token_type, token)
                 token, token_type = self.tokenizer.advance()
         
         return token, token_type
 
 
-
     def wrtie_xml_file(self, output_file: str) -> None:
         xml_str = self.parser_root.toprettyxml(indent='  ')
+
         # remove xml header
         xml_str = '\n'.join([l for l in xml_str.splitlines()[1:]])
 
@@ -637,5 +530,6 @@ class CompilationEngine:
         # get rid of empty lines
         xml_str = '\n'.join([l for l in xml_str.splitlines() if not l.isspace()])
 
+        # write to file
         with open(output_file, 'w') as f:
             f.write(xml_str)
