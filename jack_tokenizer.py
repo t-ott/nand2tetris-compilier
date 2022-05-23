@@ -33,7 +33,7 @@ class JackTokenizer:
 
         self.tokens = self._get_tokens(jack)
 
-        # initialize token indexer, call self.advance() for first token
+        # Initialize token indexer, call self.advance() for first token
         self.current_token_index = -1
         self.current_token = None
 

@@ -58,7 +58,7 @@ class CompilationEngine:
             token, token_type = self.tokenizer.advance()
             self._create_tag(class_var_dec_tag, token_type, token)
 
-            # one or more varName
+            # one or more varName(s)
             while token != ';': 
                 # varName
                 token, token_type = self.tokenizer.advance()
@@ -356,6 +356,7 @@ class CompilationEngine:
         self._create_tag(parent_tag, token_type, token)
 
         token, token_type = self.tokenizer.advance()
+        
         if token == 'else':
             # else branch of ifStatement
             self._create_tag(parent_tag, token_type, token)
