@@ -1,5 +1,7 @@
 # Jack Analyzer (nand2tetris)
 
+Included is the course-provided Jack code and analyzed XML output files in the ```ArrayTest```, ```ExpressionLessSquare```, and ```Square``` directories.
+
 ### Usage
 ```
 jack_analyzer.py [-h] [-j JACK_FILES] [-c COMPARE_FILES] [-t]
