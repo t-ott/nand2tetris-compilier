@@ -2,11 +2,10 @@ import os
 import argparse
 import re
 
-from jack_tokenizer import JackTokenizer
+from tokenizer import Tokenizer
 from compilation_engine import CompilationEngine
 
-
-class JackAnalyzer:
+class Analyzer:
     def __init__(self, target_path):
         if os.path.isdir(target_path):
             self.jack_files = [
@@ -34,7 +33,7 @@ class JackAnalyzer:
             tokenizer_output_file = os.path.join(target_dir, basename+'T.xml')
             parser_output_file = os.path.join(target_dir, basename+'.xml')
 
-            tokenizer = JackTokenizer(jack_file)
+            tokenizer = Tokenizer(jack_file)
             compilation_engine = CompilationEngine(tokenizer)
 
             # Writing the *T.xml file
@@ -91,12 +90,14 @@ class TextComparer:
             with open(compare_file, 'r') as f:
                 compare_lines = f.readlines()
 
+            comparison_failure = False
             for l_index, (l_output, l_compare) in enumerate(zip(output_lines, compare_lines)):
                 open_tag_pattern = '<([^/].*?)>'
                 open_output = re.search(open_tag_pattern, l_output)
                 open_compare = re.search(open_tag_pattern, l_compare)
                 if open_output is not None:
                     if open_compare is None or open_output.group(1) != open_compare.group(1):
+                        comparison_failure = True
                         print(f'Comparison failure at line {l_index} in file {output_file}')
                         print(f'Output line: {l_output}')
                         print(f'Compare line: {l_compare}\n')
@@ -107,6 +108,7 @@ class TextComparer:
                 text_compare = re.search(tag_text_pattern, l_compare)
                 if text_output is not None:
                     if text_compare is None or text_output.group(1).strip() != text_compare.group(1).strip():
+                        comparison_failure = True
                         print(f'Comparison failure at line {l_index} in file {output_file}')
                         print(f'Output line: {l_output}')
                         print(f'Compare line: {l_compare}\n')
@@ -117,10 +119,14 @@ class TextComparer:
                 close_compare = re.search(close_tag_pattern, l_compare)
                 if close_output is not None:
                     if close_compare is None or close_output.group(1) != close_compare.group(1):
+                        comparison_failure = True
                         print(f'Comparison failure at line {l_index} in file {output_file}')
                         print(f'Output line: {l_output}')
                         print(f'Compare line: {l_compare}\n')
                         break
+            
+            if not comparison_failure:
+                print('Success!')
 
 
 if __name__ == '__main__':
@@ -148,8 +154,8 @@ if __name__ == '__main__':
         jack_dirs = ['ArrayTest', 'ExpressionLessSquare', 'Square']
 
         for jack_dir in jack_dirs:
-            jack_analyzer = JackAnalyzer(jack_dir)
-            output_files = jack_analyzer.analyze()
+            analyzer = Analyzer(jack_dir)
+            output_files = analyzer.analyze()
 
             comparer = TextComparer(jack_dir)
             comparer.compare(output_files)
@@ -163,7 +169,7 @@ if __name__ == '__main__':
         )
         
     elif args.jack_files:
-        jack_analyzer = JackAnalyzer(args.jack_files)
+        jack_analyzer = Analyzer(args.jack_files)
         output_files = jack_analyzer.analyze()
 
         if args.compare_files:

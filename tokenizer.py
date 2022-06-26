@@ -15,7 +15,7 @@ SYMBOLS = [
     '>', '=', '~'
 ]
 
-class JackTokenizer:
+class Tokenizer:
     def __init__(self, jack_file: str):
         with open(jack_file) as f:
             jack = f.read()

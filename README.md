@@ -4,7 +4,7 @@ Included is the course-provided Jack code and analyzed XML output files in the `
 
 ### Usage
 ```
-jack_analyzer.py [-h] [-j JACK_FILES] [-c COMPARE_FILES] [-t]
+python analyzer.py [-h] [-j JACK_FILES] [-c COMPARE_FILES] [-t]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -18,5 +18,5 @@ optional arguments:
 ### Example
 Analyze all Jack files in the ```Square``` directory and compare them to the provided ```.xml``` files.
 ```
-jack_analyzer.py -j Square -c Square
+python analyzer.py -j Square -c Square
 ```
