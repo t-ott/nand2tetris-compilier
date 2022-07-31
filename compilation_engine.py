@@ -217,7 +217,9 @@ class CompilationEngine:
             # start expressionList
             token, token_type = self.tokenizer.advance()
             expression_list_tag = self._create_tag(parent_tag, 'expressionList', '')
-            self.compile_expression_list(expression_list_tag, token, token_type)
+            token, token_type = self.compile_expression_list(
+                expression_list_tag, token, token_type
+            )
         elif token == '.':
             # subroutineName
             token, token_type = self.tokenizer.advance()
